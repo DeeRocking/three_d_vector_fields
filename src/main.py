@@ -49,7 +49,7 @@ def main() -> None:
     vectorFieldActor = vtkActor()
     vectorFieldActor.SetMapper(vectorFieldMapper)
     vectorFieldActor.GetProperty().EdgeVisibilityOn()
-    # vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
+    vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
     
     renderer, renWin, iren = generateRenderingObject(windowName)
     renderer.AddActor(vectorFieldActor)

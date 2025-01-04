@@ -8,8 +8,7 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkFiltersCore import vtkGlyph3D, vtkContourFilter
 from vtkmodules.vtkFiltersSources import vtkArrowSource
 from vtkmodules.vtkCommonCore import (
-    vtkMath,
-    vtkPoints
+    vtkLookupTable
 )
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
@@ -36,15 +35,21 @@ def main() -> None:
 
     glyph3D = generateGlyph3D(vectorField)
 
+    # Set a Lookup table to map colors to vector magnitude
+    lut = vtkLookupTable()
+    lut.SetHueRange(.667, 0.0)
+    lut.Build()
+
     # Visualization
     vectorFieldMapper = vtkPolyDataMapper()
     vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
-    # vectorFieldMapper.ScalarVisibilityOff()
+    vectorFieldMapper.SetScalarRange(0.0, 15.0)
+    vectorFieldMapper.SetLookupTable(lut)
     
     vectorFieldActor = vtkActor()
     vectorFieldActor.SetMapper(vectorFieldMapper)
     vectorFieldActor.GetProperty().EdgeVisibilityOn()
-    vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
+    # vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
     
     renderer, renWin, iren = generateRenderingObject(windowName)
     renderer.AddActor(vectorFieldActor)

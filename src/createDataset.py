@@ -1,4 +1,6 @@
 from vtkmodules.vtkCommonDataModel import vtkStructuredPoints
+from vtkmodules.vtkCommonDataModel import vtkPolyData
+from vtkmodules.vtkCommonCore import vtkDoubleArray
 
 def createImageDataSet(dims: list[int], origin: list[float], sp: float = 1.0 / 25.0) -> vtkStructuredPoints:
     vol = vtkStructuredPoints()
@@ -7,3 +9,11 @@ def createImageDataSet(dims: list[int], origin: list[float], sp: float = 1.0 / 2
     vol.SetSpacing(sp, sp, sp)
 
     return vol
+
+
+def createInputData(inputArray: vtkDoubleArray) -> vtkPolyData:
+    inputData = vtkPolyData()
+
+    inputData.ShallowCopy(inputData)
+
+    return inputData

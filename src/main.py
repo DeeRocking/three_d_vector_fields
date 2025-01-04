@@ -16,46 +16,47 @@ from vtkmodules.vtkRenderingCore import (
     vtkPolyDataMapper,
 )
 
-from commonPipeline import generateRenderingObject
-from createDataset import createImageDataSet
-from createDataAttributes import createScalarAttrib
+from commonPipeline import generateRenderingObject, generateGlyph3D
+from createDataset import createImageDataSet, createInputData
+from createDataAttributes import createVectorAttrib
 
 
 def main() -> None:
     colors = vtkNamedColors()
+    windowName: str = '3D vector Field'
     
-    dims = [26, 26, 26]
+    dims = [13, 13, 13]
     origin = [-0.5, -0.5, -0.5]
-    sp = 1.0 / 25.0
+    sp = 15.0 / 25.0
 
-    vol = createImageDataSet(dims, origin, sp)
-    scalars = createScalarAttrib(dims, origin, sp)
+    vectorField = createImageDataSet(dims, origin, sp)
+    vectors = createVectorAttrib(dims, origin, sp)
 
-    vol.GetPointData().SetScalars(scalars)
+    _ = vectorField.GetPointData().SetVectors(vectors)
 
-    contour = vtkContourFilter()
-    contour.SetInputData(vol)
-    contour.SetValue(0, 0.0)
+    glyph3D = generateGlyph3D(vectorField)
 
     # Visualization
-    volMapper = vtkPolyDataMapper()
-    volMapper.SetInputConnection(contour.GetOutputPort())
-    volMapper.ScalarVisibilityOff()
+    vectorFieldMapper = vtkPolyDataMapper()
+    vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
+    # vectorFieldMapper.ScalarVisibilityOff()
     
-    volActor = vtkActor()
-    volActor.SetMapper(volMapper)
-    volActor.GetProperty().EdgeVisibilityOn()
-    volActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
+    vectorFieldActor = vtkActor()
+    vectorFieldActor.SetMapper(vectorFieldMapper)
+    vectorFieldActor.GetProperty().EdgeVisibilityOn()
+    vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
     
-    renderer, renWin, iren = generateRenderingObject('Vol')
-    renderer.AddActor(volActor)
-    renderer.SetBackground(colors.GetColor3d('SlateGray'))
+    renderer, renWin, iren = generateRenderingObject(windowName)
+    renderer.AddActor(vectorFieldActor)
+    renderer.SetBackground(colors.GetColor3d('Black'))
 
     renWin.SetSize(512, 512)
 
     renWin.Render()
 
     iren.Start()
+
+
 
 
 if __name__ == "__main__":

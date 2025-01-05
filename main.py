@@ -15,9 +15,9 @@ from vtkmodules.vtkRenderingCore import (
     vtkPolyDataMapper,
 )
 
-from src.commonPipeline import generateRenderingObject, generateGlyph3D
-from src.createDataset import createImageDataSet
-from src.createDataAttributes import createVectorAttrib, createVectorAttribFromFDTD
+from commonPipeline import generateRenderingObject, generateGlyph3D
+from createDataset import createImageDataSet
+from createDataAttributes import createVectorAttrib, createVectorAttribFromFDTD
 
 
 def main() -> None:

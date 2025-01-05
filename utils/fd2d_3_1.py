@@ -1,6 +1,6 @@
 """2D FDTD, TM program"""
 
-from typing import Tuple, Dict
+from typing import Tuple
 from math import exp
 
 import numpy as np
@@ -8,27 +8,30 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
 
 
-# Grid parameters
-xAxisSize: int = 60
-yAxisSize: int = 60
-xAxisCenter = xAxisSize // 2
-yAxisCenter = yAxisSize // 2
-
-# Step parameters
-ddx = 0.01
-dt = ddx / 6e8
-
-# Dielectric profile
-epsilon_z = 8.854e-12
-
-# Pulse parameters
-t0 = 20
-spread = 6
-
-TEMPORAL_DIMENSION = 50
 
 
-def main() -> None:
+
+def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray] | None:
+    # Grid parameters
+    xAxisSize: int = dims[0]
+    yAxisSize: int = dims[1]
+    xAxisCenter = xAxisSize // 2
+    yAxisCenter = yAxisSize // 2
+
+    # Step parameters
+    ddx = 0.01
+    dt = ddx / 6e8
+
+    # Dielectric profile
+    epsilon_z = 8.854e-12
+
+    # Pulse parameters
+    t0 = 20
+    spread = 6
+
+    TEMPORAL_DIMENSION = 50
+
+
     ez, dz, hx, hy, gaz = initFields([xAxisSize, yAxisSize])
     plotting_points = initResutsToSave([20, 30, 40, 50])
 
@@ -47,12 +50,17 @@ def main() -> None:
         plotting_points
     )
 
-    plotSavedResults(
-        [xAxisSize, yAxisSize],
-        plotting_points,
-        2,
-        2
-    )
+    if not display:
+        return hx, hy
+    else:
+        plotSavedResults(
+            [xAxisSize, yAxisSize],
+            plotting_points,
+            2,
+            2
+        )
+        return None
+
 
 
 def mainFDTDLoop(
@@ -172,5 +180,11 @@ def plot_e_field(ax, data: np.ndarray, X: np.ndarray, Y: np.ndarray, timestep: i
 
 
 if __name__ == "__main__":
-    main()
+    display = False
+    dims = [60, 60]
+    result = fdtd_3D_data(display, dims)
+
+    if result is not None:
+        hx, hy = result[0], result[1]
+        print(hx)
 

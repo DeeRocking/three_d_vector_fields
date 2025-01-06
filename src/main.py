@@ -27,7 +27,7 @@ def main() -> None:
     N = 14
     dims = [N] * 3
     origin = [-0.5, -0.5, -0.5]
-    sp = 15.0 / 25.0
+    sp = 25.0 / 25.0
 
     vectorField = createImageDataSet(dims, origin, sp)
     vectors = createVectorAttribFromFDTD(dims)

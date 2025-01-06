@@ -1,7 +1,7 @@
 """2D FDTD, TM program"""
 
 from typing import Tuple
-from math import exp
+from math import exp, sin, pi
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,11 +29,11 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray
     t0 = 20
     spread = 6
 
-    TEMPORAL_DIMENSION = 50
+    TEMPORAL_DIMENSION = 100
 
 
-    ez, dz, hx, hy, gaz = initFields([xAxisSize, yAxisSize])
-    plotting_points = initResutsToSave([20, 30, 40, 50])
+    ez, dz, hx, hy, gaz, ihx, ihy = initFields([xAxisSize, yAxisSize])
+    plotting_points = initResutsToSave([40, 100])
 
     gaussianSource = {
         'type': 'gaussian',
@@ -41,22 +41,37 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray
         'spread': spread,
         'position': [xAxisCenter, yAxisCenter]
     }
+    sineSource = {
+        'type': 'sine',
+        'frequency': 1500 * 1e6,
+        'timeCellSize': dt,
+        'position': [xAxisCenter - 5, yAxisCenter - 5]
+    }
 
+    gi2, gi3, fi1, fi2, fi3, gj2, gj3, fj1, fj2, fj3 = initPMLParams(xAxisSize)
+    paramArraysDict = {
+        'gi2': gi2, 'gi3': gi3, 'fi1': fi1, 'fi2': fi2, 'fi3': fi3, 
+        'gj2': gj2, 'gj3': gj3, 'fj1': fj1, 'fj2': fj2, 'fj3': fj3
+    }
+    createPML(8, paramArraysDict, xAxisSize, yAxisSize)
+
+    fields: dict[str, np.ndarray] = {'ez': ez, 'dz': dz, 'hx': hx, 'hy': hy, 'gaz': gaz, 'ihx': ihx, 'ihy': ihy}
     mainFDTDLoop(
-        [ez, dz, hx, hy, gaz],
+        fields,
         TEMPORAL_DIMENSION,
         [xAxisSize, yAxisSize],
-        gaussianSource,
-        plotting_points
+        sineSource,
+        plotting_points,
+        paramArraysDict
     )
 
     if not display:
-        return getDataToVTK(3, plotting_points)
+        return getDataToVTK(1, plotting_points)
     else:
         plotSavedResults(
             [xAxisSize, yAxisSize],
             plotting_points,
-            2,
+            1,
             2
         )
         return None
@@ -64,26 +79,37 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray
 
 
 def mainFDTDLoop(
-        fields: list[np.ndarray], 
+        fields: dict[str, np.ndarray], 
         temporalDim: int,
         spatialDims: list[int],
         sourceProfile: dict,
-        plotting_points: list[dict]
+        plotting_points: list[dict],
+        parametersPML: dict[str, np.ndarray]
         ) -> None:
     
-    ez, dz, hx, hy, gaz = fields[0], fields[1], fields[2], fields[3], fields[4]
+    ez, dz, hx, hy, gaz, ihx, ihy = fields['ez'], fields['dz'], fields['hx'], fields['hy'], fields['gaz'], fields['ihx'], fields['ihy']
+    gi2, gi3, fi1, fi2, fi3 = parametersPML['gi2'], parametersPML['gi3'], parametersPML['fi1'], parametersPML['fi2'], parametersPML['fi3']
+    gj2, gj3, fj1, fj2, fj3 = parametersPML['gj2'], parametersPML['gj3'], parametersPML['fj1'], parametersPML['fj2'], parametersPML['fj3']
 
     for time_step in range(1, temporalDim + 1):
         # Calculate Dz
         for j in range(1, spatialDims[1]):
             for i in range(1, spatialDims[0]):
-                dz[i, j] = dz[i, j] + 0.5 * (hy[i, j] - hy[i-1, j] - hx[i, j] + hx[i, j-1])
+                dz[i, j] = gi3[i] * gj3[j] * dz[i, j] + \
+                gi2[i] * gj2[j] * 0.5 * \
+                (hy[i, j] - hy[i - 1, j] - hx[i, j] + hx[i, j - 1])
         
         if sourceProfile['type'] == 'gaussian':
             pulse = setGaussianSource(
                 sourceProfile['t0'],
                 time_step,
                 sourceProfile['spread']
+            )
+        elif sourceProfile['type'] == 'sine':
+            pulse = setSineSource(
+                sourceProfile['frequency'],
+                sourceProfile['timeCellSize'],
+                time_step
             )
         dz[sourceProfile['position'][0], sourceProfile['position'][1]] = pulse
 
@@ -95,12 +121,18 @@ def mainFDTDLoop(
         # Calculate the Hx field
         for j in range(spatialDims[1] - 1):
             for i in range(spatialDims[0] - 1):
-                hx[i, j] = hx[i, j] + 0.5 * (ez[i, j] - ez[i, j+1])
+                curl_e = ez[i, j] - ez[i, j + 1]
+                ihx[i, j] = ihx[i, j] + curl_e
+                hx[i, j] = fj3[j] * hx[i, j] + fj2[j] * \
+                (0.5 * curl_e + fi1[i] * ihx[i, j])
 
-        # Calculate the Hx field
+        # Calculate the Hy field
         for j in range(spatialDims[1] - 1):
             for i in range(spatialDims[0] - 1):
-                hy[i, j] = hy[i, j] + 0.5 * (ez[i + 1, j] - ez[i, j])
+                curl_e = ez[i, j] - ez[i + 1, j]
+                ihy[i, j] = ihy[i, j] + curl_e
+                hy[i, j] = fi3[i] * hy[i, j] - fi2[i] * \
+                (0.5 * curl_e + fj1[j] * ihy[i, j])
         
         # Save the data at certain points for later plotting
         for plotting_point in plotting_points:
@@ -111,14 +143,16 @@ def mainFDTDLoop(
 
 
 
-def initFields(dims: list[int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def initFields(dims: list[int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     ez = np.zeros((dims[0], dims[1]))
     dz = np.zeros((dims[0], dims[1]))
     hx = np.zeros((dims[0], dims[1]))
     hy = np.zeros((dims[0], dims[1]))
     gaz = np.ones((dims[0], dims[1]))
+    ihx = np.zeros((dims[0], dims[1]))
+    ihy = np.zeros((dims[0], dims[1]))
 
-    return ez, dz, hx, hy, gaz
+    return ez, dz, hx, hy, gaz, ihx, ihy
 
 
 def initResutsToSave(num_steps: list[int]) -> list[dict]:
@@ -134,6 +168,8 @@ def initResutsToSave(num_steps: list[int]) -> list[dict]:
 def setGaussianSource(t0: int, time_step: int, spread: float) -> float:
     return exp(-0.5 * ((t0 - time_step) / spread) ** 2)
 
+def setSineSource(freqency: float, timeCellSize: float, time_step: int) -> float:
+    return sin(2 * pi * freqency * timeCellSize * time_step)
 
 def plotSavedResults(dims: list[int], plotting_points: list[dict], nrow: int, ncol: int) -> None:
     plt.style.use(plt.style.available[6])
@@ -186,8 +222,62 @@ def getDataToVTK(dataNum: int, savedData: list[dict]) -> Tuple[np.ndarray, np.nd
         print('Index out of range...')
         return savedData[0]['data_to_save'][0], savedData[0]['data_to_save'][1]
 
+
+def initPMLParams(xdimension: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                                            np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    gi2 = np.ones(xdimension)
+    gi3 = np.ones(xdimension)
+    fi1 = np.zeros(xdimension)
+    fi2 = np.ones(xdimension)
+    fi3 = np.ones(xdimension)
+
+    gj2 = np.ones(xdimension)
+    gj3 = np.ones(xdimension)
+    fj1 = np.zeros(xdimension)
+    fj2 = np.ones(xdimension)
+    fj3 = np.ones(xdimension)
+
+    return gi2, gi3, fi1, fi2, fi3, gj2, gj3, fj1, fj2, fj3
+
+
+def createPML(npml: int, paramArraysDict: dict[str, np.ndarray], xdim: int, ydim: int) -> None:
+    for n in range(npml):
+        xnum = npml  - n
+        xd = npml
+        xxn = xnum / xd
+        xn = 0.33 * xxn ** 3
+
+        paramArraysDict['gi2'][n] = 1 / (1 + xn)
+        paramArraysDict['gi2'][xdim - 1 - n] = 1 / (1 + xn)
+        paramArraysDict['gi3'][n] = (1 - xn) / (1 + xn)
+        paramArraysDict['gi3'][xdim - 1 - n] = (1 - xn) / (1 + xn)
+
+        paramArraysDict['gj2'][n] = 1 / (1 + xn)
+        paramArraysDict['gj2'][ydim - 1 - n] = 1 / (1 + xn)
+        paramArraysDict['gj3'][n] = (1 - xn) / (1 + xn)
+        paramArraysDict['gj3'][ydim - 1 - n] = (1 - xn) / (1 + xn)
+
+        xxn = (xnum - 0.5) / xd
+        xn = 0.33 * xxn ** 3
+
+        paramArraysDict['fi1'][n] = xn
+        paramArraysDict['fi1'][xdim - 2 - n] = xn
+        paramArraysDict['fi2'][n] = 1 / (1 + xn)
+        paramArraysDict['fi2'][xdim - 2 - n] = 1 / (1 + xn)
+        paramArraysDict['fi3'][n] = (1 - xn) / (1 + xn)
+        paramArraysDict['fi3'][xdim - 2 - n] = (1 - xn) / (1 + xn)
+
+        paramArraysDict['fj1'][n] = xn
+        paramArraysDict['fj1'][ydim - 2 - n] = xn
+        paramArraysDict['fj2'][n] = 1 / (1 + xn)
+        paramArraysDict['fj2'][ydim - 2 - n] = 1 / (1 + xn)
+        paramArraysDict['fj3'][n] = (1 - xn) / (1 + xn)
+        paramArraysDict['fj3'][ydim - 2 - n] = (1 - xn) / (1 + xn)
+
+
+
 if __name__ == "__main__":
-    display = False
+    display = True
     dims = [60, 60]
     result = fdtd_3D_data(display, dims)
 

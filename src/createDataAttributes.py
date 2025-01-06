@@ -1,5 +1,6 @@
 import math
 
+from numpy import random
 from vtkmodules.vtkCommonCore import vtkDoubleArray
 
 from utils.fd2d_3_1 import fdtd_3D_data
@@ -57,12 +58,22 @@ def createVectorAttribFromFDTD(dims: list[int]) -> vtkDoubleArray:
     if fdtdResults is not None:
         xField, yField = fdtdResults[0], fdtdResults[1]
 
+    samplingRange = [-10.0, 10.1]
+    # z = getRandomNumber(samplingRange)
+    z = 0
     for k in range(0, dims[2]):
         kOffset = k * dims[1] * dims[0]
         for j in range(0, dims[1]):
             jOffset = j * dims[0]
             for i in range(0, dims[0]):
                 offset = i + jOffset + kOffset
-                vectors.InsertTuple3(offset, float(xField[i, j]), float(yField[i, j]), 0)
+                vectors.InsertTuple3(offset, float(xField[i, j]), float(yField[i, j]), z)
 
     return vectors
+
+
+def getRandomNumber(samplingRange: list[float]) -> float:
+    assert samplingRange[1] > samplingRange[0], 'high limit should be stricly greater than low limit'
+    
+    rng = random.default_rng()
+    return (samplingRange[1] - samplingRange[0]) * rng.random() + samplingRange[0]

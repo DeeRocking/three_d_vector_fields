@@ -2,7 +2,7 @@ import math
 
 from vtkmodules.vtkCommonCore import vtkDoubleArray
 
-from ..utils.fd2d_3_1 import fdtd_3D_data
+from utils.fd2d_3_1 import fdtd_3D_data
 
 
 def createScalarAttrib(dims: list[int], origin: list[float], sp: float = 1.0 / 25.0) -> vtkDoubleArray:

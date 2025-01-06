@@ -32,7 +32,7 @@ def generateGlyph3D(input_data: vtkStructuredPoints) -> vtkGlyph3D:
     glyph3D.SetSourceConnection(arrowSource.GetOutputPort())
     glyph3D.SetVectorModeToUseVector()  # Use vector for vector field
     glyph3D.SetInputData(input_data)
-    glyph3D.SetScaleFactor(.6)
+    glyph3D.SetScaleFactor(1.1)
     glyph3D.Update()
 
     return glyph3D

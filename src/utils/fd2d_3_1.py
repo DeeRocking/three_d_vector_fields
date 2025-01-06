@@ -51,7 +51,7 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray
     )
 
     if not display:
-        return hx, hy
+        return getDataToVTK(3, plotting_points)
     else:
         plotSavedResults(
             [xAxisSize, yAxisSize],
@@ -106,6 +106,7 @@ def mainFDTDLoop(
         for plotting_point in plotting_points:
             if time_step == plotting_point['num_steps']:
                 plotting_point['data_to_plot'] = np.copy(ez)
+                plotting_point['data_to_save'] = [np.copy(hx), np.copy(hy)]
                
 
 
@@ -125,7 +126,7 @@ def initResutsToSave(num_steps: list[int]) -> list[dict]:
     plotting_points = []
     for label, num_step in zip(labels, num_steps):
         plotting_points.append(
-            {'label': label, 'num_steps': num_step, 'data_to_plot': None}
+            {'label': label, 'num_steps': num_step, 'data_to_plot': None, 'data_to_save': None}
         )
     return plotting_points
 
@@ -178,6 +179,12 @@ def plot_e_field(ax, data: np.ndarray, X: np.ndarray, Y: np.ndarray, timestep: i
     ax.dist = 11
 
 
+def getDataToVTK(dataNum: int, savedData: list[dict]) -> Tuple[np.ndarray, np.ndarray]:
+    if dataNum in range(len(savedData)):
+        return savedData[dataNum]['data_to_save'][0], savedData[dataNum]['data_to_save'][1]
+    else:
+        print('Index out of range...')
+        return savedData[0]['data_to_save'][0], savedData[0]['data_to_save'][1]
 
 if __name__ == "__main__":
     display = False

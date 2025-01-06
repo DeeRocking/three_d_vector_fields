@@ -63,6 +63,6 @@ def createVectorAttribFromFDTD(dims: list[int]) -> vtkDoubleArray:
             jOffset = j * dims[0]
             for i in range(0, dims[0]):
                 offset = i + jOffset + kOffset
-                vectors.InsertTuple3(offset, xField[k], yField[k], 0)
+                vectors.InsertTuple3(offset, float(xField[i, j]), float(yField[i, j]), 0)
 
     return vectors

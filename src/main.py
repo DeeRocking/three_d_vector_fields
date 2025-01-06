@@ -24,7 +24,8 @@ def main() -> None:
     colors = vtkNamedColors()
     windowName: str = '3D vector Field'
     
-    dims = [13, 13, 13]
+    N = 14
+    dims = [N] * 3
     origin = [-0.5, -0.5, -0.5]
     sp = 15.0 / 25.0
 
@@ -35,16 +36,10 @@ def main() -> None:
 
     glyph3D = generateGlyph3D(vectorField)
 
-    # Set a Lookup table to map colors to vector magnitude
-    lut = vtkLookupTable()
-    lut.SetHueRange(.667, 0.0)
-    lut.Build()
 
     # Visualization
     vectorFieldMapper = vtkPolyDataMapper()
     vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
-    vectorFieldMapper.SetScalarRange(0.0, 15.0)
-    vectorFieldMapper.SetLookupTable(lut)
     
     vectorFieldActor = vtkActor()
     vectorFieldActor.SetMapper(vectorFieldMapper)

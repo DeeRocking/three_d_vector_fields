@@ -12,7 +12,7 @@ import numba
 
 
 
-def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[list[np.ndarray], list[int]] | None:
+def fdtd_3D_data(display: bool, dims: list[int], targetIndex: int, animationData: bool) -> dict | None:
     # Grid parameters
     xAxisSize: int = dims[0]
     yAxisSize: int = dims[1]
@@ -38,7 +38,10 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[list[np.ndarray], list
     fields = initFields([xAxisSize, yAxisSize, zAxisSize])
     specifyDipole(fields['gaz'], [xAxisCenter, yAxisCenter, zAxisCenter])
 
-    plotting_points = initResutsToSave([30, 40, 50, 60])
+    if animationData:
+        plotting_points = initResutsToSave([i for i in range(TEMPORAL_DIMENSION)], animationData)
+    else:
+        plotting_points = initResutsToSave([30, 40, 50, 60], False)
 
     gaussianSource = {
         'type': 'gaussian',
@@ -60,11 +63,21 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[list[np.ndarray], list
         [xAxisSize, yAxisSize, zAxisSize],
         sineSource,
         plotting_points,
+        animationData
     )
 
     if not display:
-        ex, ey, ez = getDataToVTK(3, plotting_points)
-        return [ex, ey, ez], [xAxisCenter, yAxisCenter, zAxisCenter]
+        if not animationData:
+            return getDataToVTK(
+                targetIndex, 
+                plotting_points, 
+                [xAxisCenter, yAxisCenter, zAxisCenter], 
+                False)
+        else:
+            return getDataToVTK(
+                targetIndex, 
+                plotting_points, 
+                [xAxisCenter, yAxisCenter, zAxisCenter],True)
     else:
         nrow, ncol = 2, 2
         plotSavedResults(
@@ -84,6 +97,7 @@ def mainFDTDLoop(
         spatialDims: list[int],
         sourceProfile: dict,
         plotting_points: list[dict],
+        animationData: bool
         ) -> None:
     
     ex, ey, ez = fields['ex'], fields['ey'], fields['ez']
@@ -131,11 +145,15 @@ def mainFDTDLoop(
         )
         
         # Save the data at certain points for later plotting
-        for plotting_point in plotting_points:
-            if time_step == plotting_point['num_steps']:
-                plotting_point['data_to_plot'] = np.copy(ez)
+        if not animationData:
+            for plotting_point in plotting_points:
+                if time_step == plotting_point['num_steps']:
+                    plotting_point['data_to_plot'] = np.copy(ez)
+                    plotting_point['data_to_save'] = [np.copy(ex), np.copy(ey), np.copy(ez)]
+        else:
+            for plotting_point in plotting_points:
                 plotting_point['data_to_save'] = [np.copy(ex), np.copy(ey), np.copy(ez)]
-               
+
 
 @numba.jit(nopython=True)
 def calculate_d_fields(
@@ -257,18 +275,30 @@ def initFields(dims: list[int]) -> dict[str, np.ndarray]:
     return fields
 
 
-def initResutsToSave(num_steps: list[int]) -> list[dict]:
-    labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+def initResutsToSave(num_steps: list[int], animationData: bool) -> list[dict]:
     plotting_points = []
-    for label, num_step in zip(labels[:len(num_steps)], num_steps):
-        plotting_points.append(
-            {'label': label, 'num_steps': num_step, 
-             'data_to_plot': None, 'data_to_save': None,
-            }
-        )
-    z_scales = [0.20, 0.05, 0.05, 0.05]
-    for plotting_point, z_scale in zip(plotting_points, z_scales):
-        plotting_point['z_scale'] = z_scale
+    if animationData:
+        labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        
+        for label, num_step in zip(labels[:len(num_steps)], num_steps):
+            plotting_points.append(
+                {'label': label, 'num_steps': num_step, 
+                'data_to_plot': None, 'data_to_save': None,
+                }
+            )
+        z_scales = [0.20, 0.05, 0.05, 0.05]
+        for plotting_point, z_scale in zip(plotting_points, z_scales):
+            plotting_point['z_scale'] = z_scale
+    
+    else:
+        for num_step in num_steps:
+            plotting_points.append(
+                {
+                    'num_steps': num_step,
+                    'data_to_save': None
+
+                }
+            )
     return plotting_points
 
 
@@ -338,12 +368,35 @@ def plot_e_field(
     ax.dist = 11
 
 
-def getDataToVTK(dataNum: int, savedData: list[dict]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if dataNum in range(len(savedData)):
-        return savedData[dataNum]['data_to_save'][0], savedData[dataNum]['data_to_save'][1], savedData[dataNum]['data_to_save'][2]
+def getDataToVTK(
+        dataNum: int, 
+        savedData: list[dict], 
+        sourcePos: list[int],
+        animationData: bool) -> dict:
+    
+    if not animationData:
+        if dataNum in range(len(savedData)):
+            return {
+                'fields': [savedData[dataNum]['data_to_save'][0], savedData[dataNum]['data_to_save'][1], savedData[dataNum]['data_to_save'][2]],
+                'sourcePos': sourcePos
+            }
+        else:
+            print('Index out of range...')
+            return {
+                'fields': [savedData[0]['data_to_save'][0], savedData[0]['data_to_save'][1], savedData[0]['data_to_save'][2]],
+                'sourcePos': sourcePos
+            }
     else:
-        print('Index out of range...')
-        return savedData[0]['data_to_save'][0], savedData[0]['data_to_save'][1], savedData[0]['data_to_save'][2]
+        data = []
+        for d in savedData:
+            data.append(
+                (d['data_to_save'][0], d['data_to_save'][1], d['data_to_save'][1])
+            )
+        return {
+            'fields': data,
+            'sourcePos': sourcePos
+        }
+    
 
 
 def initPMLParams(xdimension: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
@@ -402,7 +455,8 @@ def createPML(npml: int, paramArraysDict: dict[str, np.ndarray], xdim: int, ydim
 if __name__ == "__main__":
     display = False
     dims = [60, 60, 60]
-    result = fdtd_3D_data(display, dims)
+    animationData = False
+    result = fdtd_3D_data(display, dims, animationData)
 
     if result is not None:
         eField, sourcePos = result[0], result[1]

@@ -16,6 +16,10 @@ from vtkmodules.vtkCommonDataModel import (
     vtkUnstructuredGrid,
     vtkStructuredPoints
 )
+from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
+from vtkmodules.vtkFiltersModeling import vtkOutlineFilter
+from vtkmodules.vtkCommonColor import vtkNamedColors
+
 
 
 
@@ -74,3 +78,19 @@ def generatePlateSource(sourcePos: list[int], dimensions: list[float]) -> vtkUns
     ugrid.InsertNextCell(VTK_POLYHEDRON, faceId)
 
     return ugrid
+
+
+def problemSpaceOutline(source: vtkGlyph3D) -> vtkActor:
+    outline = vtkOutlineFilter()
+    outline.SetInputConnection(source.GetOutputPort())
+    mapper = vtkPolyDataMapper()
+    mapper.SetInputConnection(outline.GetOutputPort())
+
+    actor = vtkActor()
+    actor.SetMapper(mapper)
+    
+    colors = vtkNamedColors()
+
+    actor.GetProperty().SetColor(colors.GetColor3d('White'))
+
+    return actor

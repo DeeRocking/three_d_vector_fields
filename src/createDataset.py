@@ -25,11 +25,10 @@ def createInputData(inputArray: vtkDoubleArray) -> vtkPolyData:
     return inputData
 
 
-def getDataFromFDTD(dims: list[int]) -> Tuple[list[np.ndarray], list[int]] | None:
+def getDataFromFDTD(dims: list[int], targetIndex: int, animationData: bool) -> dict | None:
     display = False
-    fdtdResults = fdtd_3D_data(display, dims)
+    fdtdResults = fdtd_3D_data(display, dims, targetIndex, animationData)
     if fdtdResults is not None:
-        field, sourcePosition = fdtdResults[0], fdtdResults[1]
-        return field, sourcePosition
+        return fdtdResults
     else:
         return None

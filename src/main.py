@@ -16,7 +16,12 @@ from vtkmodules.vtkRenderingCore import (
     vtkDataSetMapper
 )
 
-from commonPipeline import generateRenderingObject, generateGlyph3D, generatePlateSource
+from commonPipeline import (
+    generateRenderingObject,
+    generateGlyph3D, 
+    generatePlateSource,
+    problemSpaceOutline
+)
 from createDataset import createImageDataSet, getDataFromFDTD
 from createDataAttributes import createVectorAttribFromFDTD
 
@@ -31,12 +36,20 @@ def main() -> None:
     sp = 25.0 / 25.0
 
     vectorField = createImageDataSet(dims, origin, sp)
+    animationData = True
 
-    data = getDataFromFDTD(dims)
+    data = getDataFromFDTD(dims, 0, animationData)
     if data is not None:
-        field, sourcePos = data[0], data[1]
+        if not animationData:
+            fields = data['fields']
+        else:
+            fieldsList = data['fields']
+            fields = fieldsList[0]
+            
+        sourcePos = data['sourcePos']
+        vectors = createVectorAttribFromFDTD(dims, (fields[0], fields[1], fields[2]))
 
-        vectors = createVectorAttribFromFDTD(dims, (field[0], field[1], field[2]))
+        # TODO: Implement the animation logic
 
         _ = vectorField.GetPointData().SetVectors(vectors)
 
@@ -61,10 +74,13 @@ def main() -> None:
         plateActor = vtkActor()
         plateActor.SetMapper(plateMapper)
         plateActor.GetProperty().SetColor(colors.GetColor3d('Silver'))
+
+        outlineActor = problemSpaceOutline(glyph3D)
         
         renderer, renWin, iren = generateRenderingObject(windowName)
         renderer.AddActor(vectorFieldActor)
         renderer.AddActor(plateActor)
+        renderer.AddActor(outlineActor)
         renderer.SetBackground(colors.GetColor3d('Black'))
 
         renWin.SetSize(512, 512)

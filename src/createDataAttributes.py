@@ -3,7 +3,7 @@ import math
 from numpy import random
 from vtkmodules.vtkCommonCore import vtkDoubleArray
 
-from utils.fd2d_3_1 import fdtd_3D_data
+from utils.fd3d_4_1 import fdtd_3D_data
 
 
 def createScalarAttrib(dims: list[int], origin: list[float], sp: float = 1.0 / 25.0) -> vtkDoubleArray:
@@ -54,20 +54,23 @@ def createVectorAttribFromFDTD(dims: list[int]) -> vtkDoubleArray:
     vectors.SetNumberOfTuples(dims[0] * dims[1] * dims[2])
 
     display = False
-    fdtdResults = fdtd_3D_data(display, dims[:-1])
+    fdtdResults = fdtd_3D_data(display, dims)
     if fdtdResults is not None:
-        xField, yField = fdtdResults[0], fdtdResults[1]
+        xField, yField, zField = fdtdResults[0], fdtdResults[1], fdtdResults[2]
 
-    samplingRange = [-10.0, 10.1]
-    # z = getRandomNumber(samplingRange)
-    z = 0
+
     for k in range(0, dims[2]):
         kOffset = k * dims[1] * dims[0]
         for j in range(0, dims[1]):
             jOffset = j * dims[0]
             for i in range(0, dims[0]):
                 offset = i + jOffset + kOffset
-                vectors.InsertTuple3(offset, float(xField[i, j]), float(yField[i, j]), z)
+                vectors.InsertTuple3(
+                    offset, 
+                    float(xField[i, j, k]), 
+                    float(yField[i, j, k]), 
+                    float(zField[i, j, k])
+                    )
 
     return vectors
 

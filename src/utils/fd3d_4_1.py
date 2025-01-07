@@ -12,7 +12,7 @@ import numba
 
 
 
-def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[list[np.ndarray], list[int]] | None:
     # Grid parameters
     xAxisSize: int = dims[0]
     yAxisSize: int = dims[1]
@@ -63,7 +63,8 @@ def fdtd_3D_data(display: bool, dims: list[int]) -> Tuple[np.ndarray, np.ndarray
     )
 
     if not display:
-        return getDataToVTK(1, plotting_points)
+        ex, ey, ez = getDataToVTK(3, plotting_points)
+        return [ex, ey, ez], [xAxisCenter, yAxisCenter, zAxisCenter]
     else:
         nrow, ncol = 2, 2
         plotSavedResults(
@@ -404,6 +405,7 @@ if __name__ == "__main__":
     result = fdtd_3D_data(display, dims)
 
     if result is not None:
-        ex, ey, ez = result[0], result[1], result[2]
+        eField, sourcePos = result[0], result[1]
+        ex, ey, ez = eField[0], eField[1], eField[2]
         print(ex)
 

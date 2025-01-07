@@ -13,11 +13,12 @@ from vtkmodules.vtkCommonCore import (
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
+    vtkDataSetMapper
 )
 
-from commonPipeline import generateRenderingObject, generateGlyph3D
-from createDataset import createImageDataSet
-from createDataAttributes import createVectorAttrib, createVectorAttribFromFDTD
+from commonPipeline import generateRenderingObject, generateGlyph3D, generatePlateSource
+from createDataset import createImageDataSet, getDataFromFDTD
+from createDataAttributes import createVectorAttribFromFDTD
 
 
 def main() -> None:
@@ -30,31 +31,47 @@ def main() -> None:
     sp = 25.0 / 25.0
 
     vectorField = createImageDataSet(dims, origin, sp)
-    vectors = createVectorAttribFromFDTD(dims)
 
-    _ = vectorField.GetPointData().SetVectors(vectors)
+    data = getDataFromFDTD(dims)
+    if data is not None:
+        field, sourcePos = data[0], data[1]
 
-    glyph3D = generateGlyph3D(vectorField)
+        vectors = createVectorAttribFromFDTD(dims, (field[0], field[1], field[2]))
+
+        _ = vectorField.GetPointData().SetVectors(vectors)
+
+        glyph3D = generateGlyph3D(vectorField)
 
 
-    # Visualization
-    vectorFieldMapper = vtkPolyDataMapper()
-    vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
-    
-    vectorFieldActor = vtkActor()
-    vectorFieldActor.SetMapper(vectorFieldMapper)
-    vectorFieldActor.GetProperty().EdgeVisibilityOn()
-    vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
-    
-    renderer, renWin, iren = generateRenderingObject(windowName)
-    renderer.AddActor(vectorFieldActor)
-    renderer.SetBackground(colors.GetColor3d('Black'))
+        # Visualization
+        vectorFieldMapper = vtkPolyDataMapper()
+        vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
+        
+        vectorFieldActor = vtkActor()
+        vectorFieldActor.SetMapper(vectorFieldMapper)
+        vectorFieldActor.GetProperty().EdgeVisibilityOn()
+        vectorFieldActor.GetProperty().SetColor(colors.GetColor3d('Salmon'))
 
-    renWin.SetSize(512, 512)
+        length, width, heigth = 0.5, 0.5, 3.0
+        plate = generatePlateSource(sourcePos, [length, width, heigth])
 
-    renWin.Render()
+        plateMapper = vtkDataSetMapper()
+        plateMapper.SetInputData(plate)
 
-    iren.Start()
+        plateActor = vtkActor()
+        plateActor.SetMapper(plateMapper)
+        plateActor.GetProperty().SetColor(colors.GetColor3d('Silver'))
+        
+        renderer, renWin, iren = generateRenderingObject(windowName)
+        renderer.AddActor(vectorFieldActor)
+        renderer.AddActor(plateActor)
+        renderer.SetBackground(colors.GetColor3d('Black'))
+
+        renWin.SetSize(512, 512)
+
+        renWin.Render()
+
+        iren.Start()
 
 
 

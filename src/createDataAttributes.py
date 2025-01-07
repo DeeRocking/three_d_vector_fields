@@ -1,9 +1,10 @@
+from typing import Tuple
+
 import math
 
+import numpy as np
 from numpy import random
 from vtkmodules.vtkCommonCore import vtkDoubleArray
-
-from utils.fd3d_4_1 import fdtd_3D_data
 
 
 def createScalarAttrib(dims: list[int], origin: list[float], sp: float = 1.0 / 25.0) -> vtkDoubleArray:
@@ -48,16 +49,12 @@ def createVectorAttrib(dims: list[int], origin: list[float], sp: float = 1.0 / 2
     return vectors
 
 
-def createVectorAttribFromFDTD(dims: list[int]) -> vtkDoubleArray:
+def createVectorAttribFromFDTD(dims: list[int], field: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> vtkDoubleArray:
     vectors = vtkDoubleArray()
     vectors.SetNumberOfComponents(3)
     vectors.SetNumberOfTuples(dims[0] * dims[1] * dims[2])
 
-    display = False
-    fdtdResults = fdtd_3D_data(display, dims)
-    if fdtdResults is not None:
-        xField, yField, zField = fdtdResults[0], fdtdResults[1], fdtdResults[2]
-
+    xField, yField, zField = field[0], field[1], field[2]
 
     for k in range(0, dims[2]):
         kOffset = k * dims[1] * dims[0]
@@ -75,8 +72,3 @@ def createVectorAttribFromFDTD(dims: list[int]) -> vtkDoubleArray:
     return vectors
 
 
-def getRandomNumber(samplingRange: list[float]) -> float:
-    assert samplingRange[1] > samplingRange[0], 'high limit should be stricly greater than low limit'
-    
-    rng = random.default_rng()
-    return (samplingRange[1] - samplingRange[0]) * rng.random() + samplingRange[0]

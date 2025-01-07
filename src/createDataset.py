@@ -1,6 +1,12 @@
+from typing import Tuple
+
+import numpy as np
 from vtkmodules.vtkCommonDataModel import vtkStructuredPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkCommonCore import vtkDoubleArray
+
+
+from utils.fd3d_4_1 import fdtd_3D_data
 
 def createImageDataSet(dims: list[int], origin: list[float], sp: float = 1.0 / 25.0) -> vtkStructuredPoints:
     vol = vtkStructuredPoints()
@@ -17,3 +23,13 @@ def createInputData(inputArray: vtkDoubleArray) -> vtkPolyData:
     inputData.ShallowCopy(inputData)
 
     return inputData
+
+
+def getDataFromFDTD(dims: list[int]) -> Tuple[list[np.ndarray], list[int]] | None:
+    display = False
+    fdtdResults = fdtd_3D_data(display, dims)
+    if fdtdResults is not None:
+        field, sourcePosition = fdtdResults[0], fdtdResults[1]
+        return field, sourcePosition
+    else:
+        return None

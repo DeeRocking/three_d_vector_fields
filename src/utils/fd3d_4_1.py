@@ -32,7 +32,7 @@ def fdtd_3D_data(display: bool, dims: list[int], targetIndex: int, animationData
     t0 = 20
     spread = 6
 
-    TEMPORAL_DIMENSION = 5
+    TEMPORAL_DIMENSION = 60
 
 
     fields = initFields([xAxisSize, yAxisSize, zAxisSize])

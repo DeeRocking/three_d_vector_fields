@@ -2,7 +2,11 @@ from typing import Tuple, Optional
 
 import numpy as np
 from vtkmodules.vtkCommonDataModel import vtkStructuredPoints
-from vtkmodules.vtkRenderingCore import vtkRenderWindowInteractor, vtkActor
+from vtkmodules.vtkRenderingCore import (
+    vtkRenderWindowInteractor,
+    vtkActor,
+    vtkPolyDataMapper
+)
 
 from createDataAttributes import createVectorAttribFromFDTD
 from commonPipeline import generateGlyph3D
@@ -36,10 +40,14 @@ class vtkTimerCallback():
             _ = self.vectorField.GetPointData().SetVectors(vectors)
 
             glyph3D = generateGlyph3D(self.vectorField)
-            self.vectorFieldActor.GetMapper().SetInputConnection(glyph3D.GetOutputPort())
-            iren = obj
-            iren.GetRenderWindow().Render()
+
+            vectorFieldMapper = vtkPolyDataMapper()
+            vectorFieldMapper.SetInputConnection(glyph3D.GetOutputPort())
+            self.vectorFieldActor.SetMapper(vectorFieldMapper)
+
+            self.iren = obj
+            self.iren.GetRenderWindow().Render()
             self.timer_count += 1
             step += 1
         if self.timerId:
-            iren.DestroyTimer(self.timerId)
+            self.iren.DestroyTimer(self.timerId)

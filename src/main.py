@@ -93,13 +93,12 @@ def main() -> None:
             )
             
             iren.AddObserver('TimerEvent', cb.execute)
-            cb.timerId = iren.CreateRepeatingTimer(500)
+            cb.timerId = iren.CreateRepeatingTimer(300)
 
 
         renWin.Render()
 
         iren.Start()
-
 
 
 

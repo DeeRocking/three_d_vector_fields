@@ -5,11 +5,6 @@ import vtkmodules.vtkInteractionStyle
 # noinspection PyUnresolvedReferences
 import vtkmodules.vtkRenderingOpenGL2
 from vtkmodules.vtkCommonColor import vtkNamedColors
-from vtkmodules.vtkFiltersCore import vtkGlyph3D, vtkContourFilter
-from vtkmodules.vtkFiltersSources import vtkArrowSource
-from vtkmodules.vtkCommonCore import (
-    vtkLookupTable
-)
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkPolyDataMapper,
@@ -24,6 +19,7 @@ from commonPipeline import (
 )
 from createDataset import createImageDataSet, getDataFromFDTD
 from createDataAttributes import createVectorAttribFromFDTD
+from animation import vtkTimerCallback
 
 
 def main() -> None:
@@ -84,6 +80,20 @@ def main() -> None:
         renderer.SetBackground(colors.GetColor3d('Black'))
 
         renWin.SetSize(512, 512)
+
+        if animationData:
+            iren.Initialize()
+
+            cb = vtkTimerCallback(
+                len(fieldsList),
+                vectorField,
+                fieldsList,
+                iren
+            )
+            
+            iren.AddObserver('TimerEvent', cb.execute)
+            cb.timerId = iren.CreateRepeatingTimer(300)
+
 
         renWin.Render()
 

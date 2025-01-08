@@ -45,7 +45,6 @@ def main() -> None:
         sourcePos = data['sourcePos']
         vectors = createVectorAttribFromFDTD(dims, (fields[0], fields[1], fields[2]))
 
-        # TODO: Implement the animation logic
 
         _ = vectorField.GetPointData().SetVectors(vectors)
 

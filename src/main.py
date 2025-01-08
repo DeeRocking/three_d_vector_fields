@@ -78,20 +78,22 @@ def main() -> None:
         renderer.AddActor(outlineActor)
         renderer.SetBackground(colors.GetColor3d('Black'))
 
-        renWin.SetSize(512, 512)
+        renWin.SetSize(1200, 800)
 
         if animationData:
             iren.Initialize()
 
             cb = vtkTimerCallback(
                 len(fieldsList),
+                dims,
+                vectorFieldActor,
                 vectorField,
                 fieldsList,
                 iren
             )
             
             iren.AddObserver('TimerEvent', cb.execute)
-            cb.timerId = iren.CreateRepeatingTimer(300)
+            cb.timerId = iren.CreateRepeatingTimer(500)
 
 
         renWin.Render()

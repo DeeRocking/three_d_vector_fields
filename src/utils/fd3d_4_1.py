@@ -32,7 +32,7 @@ def fdtd_3D_data(display: bool, dims: list[int], targetIndex: int, animationData
     t0 = 20
     spread = 6
 
-    TEMPORAL_DIMENSION = 60
+    TEMPORAL_DIMENSION = 5
 
 
     fields = initFields([xAxisSize, yAxisSize, zAxisSize])
@@ -277,7 +277,7 @@ def initFields(dims: list[int]) -> dict[str, np.ndarray]:
 
 def initResutsToSave(num_steps: list[int], animationData: bool) -> list[dict]:
     plotting_points = []
-    if animationData:
+    if not animationData:
         labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
         
         for label, num_step in zip(labels[:len(num_steps)], num_steps):

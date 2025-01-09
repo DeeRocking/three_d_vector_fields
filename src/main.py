@@ -15,7 +15,8 @@ from commonPipeline import (
     generateRenderingObject,
     generateGlyph3D, 
     generatePlateSource,
-    problemSpaceOutline
+    problemSpaceOutline,
+    generateAxesActor
 )
 from createDataset import createImageDataSet, getDataFromFDTD
 from createDataAttributes import createVectorAttribFromFDTD
@@ -32,9 +33,9 @@ def main() -> None:
     sp = 25.0 / 25.0
 
     vectorField = createImageDataSet(dims, origin, sp)
-    animationData = True
+    animationData = False
 
-    data = getDataFromFDTD(dims, 0, animationData)
+    data = getDataFromFDTD(dims, 3, animationData)
     if data is not None:
         if not animationData:
             fields = data['fields']
@@ -71,11 +72,14 @@ def main() -> None:
         plateActor.GetProperty().SetColor(colors.GetColor3d('Silver'))
 
         outlineActor = problemSpaceOutline(glyph3D)
+
+        axisActor = generateAxesActor()
         
         renderer, renWin, iren = generateRenderingObject(windowName)
         renderer.AddActor(vectorFieldActor)
         renderer.AddActor(plateActor)
         renderer.AddActor(outlineActor)
+        renderer.AddActor(axisActor)
         renderer.SetBackground(colors.GetColor3d('Black'))
 
         renWin.SetSize(1200, 800)
@@ -95,7 +99,7 @@ def main() -> None:
             iren.AddObserver('TimerEvent', cb.execute)
             cb.timerId = iren.CreateRepeatingTimer(300)
 
-
+        iren.Initialize()
         renWin.Render()
 
         iren.Start()

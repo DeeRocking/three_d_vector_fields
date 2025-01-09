@@ -5,6 +5,10 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderWindowInteractor,
     vtkRenderer
 )
+from vtkmodules.vtkInteractionStyle import (
+    vtkInteractorStyleTrackballActor,
+    vtkInteractorStyleJoystickCamera
+)
 from vtkmodules.vtkFiltersCore import vtkGlyph3D
 from vtkmodules.vtkFiltersSources import vtkArrowSource
 from vtkmodules.vtkCommonCore import (
@@ -19,7 +23,8 @@ from vtkmodules.vtkCommonDataModel import (
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 from vtkmodules.vtkFiltersModeling import vtkOutlineFilter
 from vtkmodules.vtkCommonColor import vtkNamedColors
-
+from vtkmodules.vtkCommonTransforms import vtkTransform
+from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
 
 
 
@@ -32,6 +37,9 @@ def generateRenderingObject(windowName: str) -> Tuple[vtkRenderer, vtkRenderWind
 
     iren = vtkRenderWindowInteractor()
     iren.SetRenderWindow(renWin)
+
+    style = vtkInteractorStyleJoystickCamera()
+    iren.SetInteractorStyle(style) 
 
     return renderer, renWin, iren
 
@@ -94,3 +102,18 @@ def problemSpaceOutline(source: vtkGlyph3D) -> vtkActor:
     actor.GetProperty().SetColor(colors.GetColor3d('White'))
 
     return actor
+
+
+def generateAxesActor() -> vtkAxesActor:
+    position = [0.0, 0.0, 0.0]
+    scaleFactor = 5.0
+
+    transform = vtkTransform()
+    transform.Translate(position[0], position[1], position[2])
+    transform.Scale(scaleFactor, scaleFactor, scaleFactor)
+
+    axes = vtkAxesActor()
+    axes.SetUserTransform(transform)
+
+   
+    return axes
